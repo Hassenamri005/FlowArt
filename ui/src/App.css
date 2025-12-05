@@ -1,0 +1,214 @@
+:root {
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --accent: #1677ff;
+}
+
+#root, html, body {
+  height: 100%;
+}
+
+.app-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  gap: 12px;
+  padding: 8px 12px; /* tighter */
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 33%;
+}
+.topbar-label { font-size: 12px; color: var(--muted); }
+/* Light theme for Antd textareas (topbar) */
+.topbar .ant-input,
+.topbar .ant-input-textarea textarea {
+  background: #fff !important;
+  color: #111827 !important;
+  border: 1px solid var(--border) !important;
+}
+.topbar .ant-input:focus, .topbar .ant-input-focused,
+.topbar .ant-input-textarea textarea:focus {
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.15);
+  border-color: var(--accent) !important;
+}
+/* compact textarea lines */
+.topbar .ant-input-textarea textarea { line-height: 1.3; }
+/* readable selection colors */
+.topbar .ant-input::selection,
+.topbar .ant-input-textarea textarea::selection {
+  background: rgba(22, 119, 255, 0.2);
+  color: #111827;
+}
+.topbar-actions {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+.topbar .primary {
+  background: var(--accent);
+  border: none;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 270px 1fr 25%;
+  min-height: 0; /* allow children to overflow */
+}
+
+.sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  overflow: auto;
+  padding: 10px;
+}
+.sidebar.left {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar.right {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+.sidebar-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.muted { color: var(--muted); font-size: 12px; }
+.error { color: #ef4444; font-size: 12px; }
+
+.palette { display: flex; flex-direction: column; gap: 8px; }
+.palette-item {
+  border: 2px solid var(--border);
+  padding: 8px;
+  border-radius: 8px;
+  background: transparent;
+  cursor: grab;
+}
+.pi-label { font-size: 14px; }
+.pi-type { font-size: 11px; color: var(--muted); }
+
+.canvas { height: 100%; }
+
+.kv { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); padding: 4px 0; }
+.config-editor { margin-top: 12px; }
+.config-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+/* Last result box */
+.result-box { 
+  border: 1px solid var(--border); 
+  border-radius: 8px; 
+  padding: 8px; 
+  background: #fff; 
+  margin: 10px 0; 
+}
+.pre-json { 
+  margin: 0; 
+  background: #f8fafc; 
+  border: 1px solid var(--border); 
+  border-radius: 6px; 
+  padding: 8px; 
+  max-height: 260px; 
+  overflow: auto; 
+  font-size: 12px; 
+}
+/* Light theme for Antd textareas (right config panel) */
+.config-editor .ant-input,
+.config-editor .ant-input-textarea textarea {
+  background: #fff !important;
+  color: #111827 !important;
+  border: 1px solid var(--border) !important;
+}
+.config-editor .ant-input:focus, .config-editor .ant-input-focused,
+.config-editor .ant-input-textarea textarea:focus {
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.15);
+  border-color: var(--accent) !important;
+}
+/* compact lines */
+.config-editor .ant-input-textarea textarea { line-height: 1.3; }
+/* readable selection */
+.config-editor .ant-input::selection,
+.config-editor .ant-input-textarea textarea::selection {
+  background: rgba(22, 119, 255, 0.2);
+  color: #111827;
+}
+
+/* React Flow nodes: enforce light backgrounds and readable selection */
+.react-flow__node { 
+  background: transparent !important; 
+  color: #111827 !important; 
+  border: 0 !important; 
+}
+.react-flow__node .node-card { 
+  background: #fff; 
+  color: #111827; 
+  border: 1px solid var(--border);
+}
+.react-flow__node.selected { 
+  box-shadow: none !important; 
+  border: 0 !important; 
+}
+.react-flow__node.selected .node-card { border-color: var(--border) !important; }
+.react-flow__node:focus, .react-flow__node:focus-visible { outline: none !important; box-shadow: none !important; }
+
+/* High-specificity overrides to fully suppress blue selected border */
+.react-flow .react-flow__node.selected,
+.react-flow .react-flow__node.selectable.selected,
+.react-flow .react-flow__node:focus,
+.react-flow .react-flow__node:focus-visible,
+.react-flow .react-flow__node:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+.react-flow .react-flow__node.selected .node-card,
+.react-flow .react-flow__node.selectable.selected .node-card {
+  border-color: var(--border) !important;
+  box-shadow: none !important;
+}
+.node-card::selection, .node-card *::selection { 
+  background: rgba(22, 119, 255, 0.2); 
+  color: #111827; 
+}
+.react-flow__handle { 
+  background: var(--accent) !important; 
+  border: 1px solid #fff; 
+  width: 10px; 
+  height: 10px; 
+}
+
+/* Remove blue ring when selecting/focusing nodes */
+.react-flow__node { outline: none !important; }
+.react-flow__node:focus, .react-flow__node:focus-visible { outline: none !important; }
+.react-flow__node.selected { box-shadow: none !important; border-color: var(--border) !important; }
+
+/* Neutral selection rectangle */
+.react-flow__selection { 
+  background: rgba(148, 163, 184, 0.15) !important; /* slate */
+  border: 1px dashed var(--border) !important;
+}
+/* Node selection overlay (drag multi-select) */
+.react-flow__nodesselection-rect {
+  fill: rgba(148, 163, 184, 0.15) !important;
+  stroke: var(--border) !important;
+}
+.react-flow__nodesselection {
+  border-color: var(--border) !important;
+}

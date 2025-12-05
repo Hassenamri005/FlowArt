@@ -1,0 +1,126 @@
+{
+  "nodes": [
+    {
+      "id": "trigger_1",
+      "type": "trigger.webhook",
+      "config": {}
+    },
+    {
+      "id": "cond_severity",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.sentiment_score}}",
+        "op": "<=",
+        "right": 2
+      }
+    },
+    {
+      "id": "chat_high",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Return JSON {subject, body}. Subject summarizes high-severity complaint from {{payload.customer_name}} (order {{payload.order_id}}). Body is a short escalation note for managers. Original: {{payload.message}}"
+      }
+    },
+    {
+      "id": "email_leads",
+      "type": "action.send_email",
+      "config": {
+        "to": "leads@example.com",
+        "subject": "{{nodes.chat_high.generated_response.subject}}",
+        "content": "{{nodes.chat_high.generated_response.body}}"
+      }
+    },
+    {
+      "id": "sms_manager",
+      "type": "action.send_sms",
+      "config": {
+        "to": "+15550000001",
+        "content": "High severity from {{payload.customer_name}} on order {{payload.order_id}}. {{nodes.chat_high.generated_response.subject}}"
+      }
+    },
+    {
+      "id": "cond_keywords",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.message}}",
+        "op": "regex",
+        "right": "(?i)billing|payment|invoice"
+      }
+    },
+    {
+      "id": "chat_billing_reply",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Return JSON {subject, body} for a polite billing-focused reply to {{payload.customer_name}} re order {{payload.order_id}}. Keep body < 120 chars. Original: {{payload.message}}"
+      }
+    },
+    {
+      "id": "email_billing",
+      "type": "action.send_email",
+      "config": {
+        "to": "billing@example.com",
+        "subject": "{{nodes.chat_billing_reply.generated_response.subject}}",
+        "content": "{{nodes.chat_billing_reply.generated_response.body}}"
+      }
+    },
+    {
+      "id": "chat_general_reply",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Return JSON {subject, body} as a helpful reply to {{payload.customer_name}}. Keep body < 120 chars. Original: {{payload.message}}"
+      }
+    },
+    {
+      "id": "cond_contact_sms",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.contact_method}}",
+        "op": "==",
+        "right": "sms"
+      }
+    },
+    {
+      "id": "sms_user",
+      "type": "action.send_sms",
+      "config": {
+        "to": "{{payload.phone}}",
+        "content": "{{nodes.chat_general_reply.generated_response.body}}"
+      }
+    },
+    {
+      "id": "email_user",
+      "type": "action.send_email",
+      "config": {
+        "to": "{{payload.email}}",
+        "subject": "{{nodes.chat_general_reply.generated_response.subject}}",
+        "content": "{{nodes.chat_general_reply.generated_response.body}}"
+      }
+    },
+    {
+      "id": "end_1",
+      "type": "logic.end",
+      "config": {}
+    }
+  ],
+  "edges": [
+    { "source": "trigger_1", "target": "cond_severity" },
+
+    { "source": "cond_severity", "source_port": "true", "target": "chat_high" },
+    { "source": "chat_high", "source_port": "success", "target": "email_leads" },
+    { "source": "email_leads", "target": "sms_manager" },
+    { "source": "sms_manager", "target": "end_1" },
+
+    { "source": "cond_severity", "source_port": "false", "target": "cond_keywords" },
+    { "source": "cond_keywords", "source_port": "true", "target": "chat_billing_reply" },
+    { "source": "chat_billing_reply", "source_port": "success", "target": "email_billing" },
+    { "source": "email_billing", "target": "end_1" },
+
+    { "source": "cond_keywords", "source_port": "false", "target": "chat_general_reply" },
+    { "source": "chat_general_reply", "source_port": "success", "target": "cond_contact_sms" },
+    { "source": "cond_contact_sms", "source_port": "true", "target": "sms_user" },
+    { "source": "cond_contact_sms", "source_port": "false", "target": "email_user" },
+    { "source": "sms_user", "target": "end_1" },
+    { "source": "email_user", "target": "end_1" }
+  ],
+  "entry": "trigger_1"
+}

@@ -1,0 +1,88 @@
+{
+  "nodes": [
+    {
+      "id": "trigger_1",
+      "type": "trigger.webhook",
+      "config": {}
+    },
+    {
+      "id": "high_value",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.order_total}}",
+        "op": ">=",
+        "right": 1000
+      }
+    },
+    {
+      "id": "chat_vip",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Compose a short VIP follow-up for order {{payload.order_id}} by {{payload.customer_name}} totaling ${{payload.order_total}}. Keep it under 2 sentences."
+      }
+    },
+    {
+      "id": "email_vip",
+      "type": "action.send_email",
+      "config": {
+        "to": "vip-team@example.com",
+        "subject": "VIP order {{payload.order_id}} requires attention",
+        "content": "{{nodes.chat_vip.generated_response}}"
+      }
+    },
+    {
+      "id": "refund_regex",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.message}}",
+        "op": "regex",
+        "right": "(?i)refund|chargeback|cancel"
+      }
+    },
+    {
+      "id": "sms_refund",
+      "type": "action.send_sms",
+      "config": {
+        "to": "+15551234567",
+        "content": "Refund/cancel request detected for order {{payload.order_id}} from {{payload.customer_name}}: {{payload.message}}"
+      }
+    },
+    {
+      "id": "chat_support",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Summarize customer message from {{payload.customer_name}} in one sentence: {{payload.message}}"
+      }
+    },
+    {
+      "id": "email_support",
+      "type": "action.send_email",
+      "config": {
+        "to": "support@example.com",
+        "subject": "Support request: {{payload.order_id}}",
+        "content": "{{nodes.chat_support.generated_response}}"
+      }
+    },
+    {
+      "id": "end_1",
+      "type": "logic.end",
+      "config": {}
+    }
+  ],
+  "edges": [
+    { "source": "trigger_1", "target": "high_value" },
+
+    { "source": "high_value", "source_port": "true", "target": "chat_vip" },
+    { "source": "chat_vip", "source_port": "success", "target": "email_vip" },
+    { "source": "email_vip", "target": "end_1" },
+
+    { "source": "high_value", "source_port": "false", "target": "refund_regex" },
+    { "source": "refund_regex", "source_port": "true", "target": "sms_refund" },
+    { "source": "sms_refund", "target": "end_1" },
+
+    { "source": "refund_regex", "source_port": "false", "target": "chat_support" },
+    { "source": "chat_support", "source_port": "success", "target": "email_support" },
+    { "source": "email_support", "target": "end_1" }
+  ],
+  "entry": "trigger_1"
+}

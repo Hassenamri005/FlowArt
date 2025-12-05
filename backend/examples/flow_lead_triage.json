@@ -1,0 +1,100 @@
+{
+  "nodes": [
+    {
+      "id": "trigger_1",
+      "type": "trigger.webhook",
+      "config": {}
+    },
+    {
+      "id": "cond_urgent_regex",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.body}}",
+        "op": "regex",
+        "right": "(?i)\\burgent\\b|\\basap\\b|\\bimmediately\\b"
+      }
+    },
+    {
+      "id": "cond_high_priority",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.priority}}",
+        "op": ">=",
+        "right": 7
+      }
+    },
+    {
+      "id": "chat_structured_reply",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "You are an assistant. Create a strict JSON object with keys subject and body to reply to customer {{payload.customer_name}} about order {{payload.order_id}}. Keep body under 120 chars."
+      }
+    },
+    {
+      "id": "email_vip",
+      "type": "action.send_email",
+      "config": {
+        "to": "vip-team@example.com",
+        "subject": "VIP: {{nodes.chat_structured_reply.generated_response.subject}}",
+        "content": "{{nodes.chat_structured_reply.generated_response.body}}"
+      }
+    },
+    {
+      "id": "chat_normal_reply",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Return JSON {subject, body} as a courteous acknowledgment to {{payload.customer_name}} regarding order {{payload.order_id}}. Keep body under 120 chars."
+      }
+    },
+    {
+      "id": "cond_contact_sms",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.contact_method}}",
+        "op": "==",
+        "right": "sms"
+      }
+    },
+    {
+      "id": "sms_normal",
+      "type": "action.send_sms",
+      "config": {
+        "to": "{{payload.phone}}",
+        "content": "{{nodes.chat_normal_reply.generated_response.body}}"
+      }
+    },
+    {
+      "id": "email_normal",
+      "type": "action.send_email",
+      "config": {
+        "to": "{{payload.email}}",
+        "subject": "{{nodes.chat_normal_reply.generated_response.subject}}",
+        "content": "{{nodes.chat_normal_reply.generated_response.body}}"
+      }
+    },
+    {
+      "id": "end_1",
+      "type": "logic.end",
+      "config": {}
+    }
+  ],
+  "edges": [
+    { "source": "trigger_1", "target": "cond_urgent_regex" },
+
+    { "source": "cond_urgent_regex", "source_port": "true", "target": "chat_structured_reply" },
+    { "source": "chat_structured_reply", "source_port": "success", "target": "email_vip" },
+    { "source": "email_vip", "target": "end_1" },
+
+    { "source": "cond_urgent_regex", "source_port": "false", "target": "cond_high_priority" },
+
+    { "source": "cond_high_priority", "source_port": "true", "target": "chat_structured_reply" },
+
+    { "source": "cond_high_priority", "source_port": "false", "target": "chat_normal_reply" },
+    { "source": "chat_normal_reply", "source_port": "success", "target": "cond_contact_sms" },
+    { "source": "cond_contact_sms", "source_port": "true", "target": "sms_normal" },
+    { "source": "cond_contact_sms", "source_port": "false", "target": "email_normal" },
+    { "source": "sms_normal", "target": "end_1" },
+    { "source": "email_normal", "target": "end_1" }
+  ],
+  "entry": "trigger_1"
+}

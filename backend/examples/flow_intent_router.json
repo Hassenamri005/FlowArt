@@ -1,0 +1,154 @@
+{
+  "nodes": [
+    {
+      "id": "trigger_1",
+      "type": "trigger.webhook",
+      "config": {}
+    },
+    {
+      "id": "chat_intent",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Return strict JSON with keys intent(one of ['complaint','question','praise','other']), urgency(1-10), and summary. Use input: name={{payload.customer_name}}, order={{payload.order_id}}, message={{payload.message}}."
+      }
+    },
+    {
+      "id": "cond_is_complaint",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{nodes.chat_intent.generated_response.intent}}",
+        "op": "==",
+        "right": "complaint"
+      }
+    },
+    {
+      "id": "chat_compose_complaint",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Return strict JSON {subject, body} for an escalation email about a complaint. Include order {{payload.order_id}} and customer {{payload.customer_name}}. One-sentence body summarizing: {{nodes.chat_intent.generated_response.summary}}"
+      }
+    },
+    {
+      "id": "email_complaint",
+      "type": "action.send_email",
+      "config": {
+        "to": "support@example.com",
+        "subject": "{{nodes.chat_compose_complaint.generated_response.subject}}",
+        "content": "{{nodes.chat_compose_complaint.generated_response.body}}"
+      }
+    },
+    {
+      "id": "cond_is_question",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{nodes.chat_intent.generated_response.intent}}",
+        "op": "==",
+        "right": "question"
+      }
+    },
+    {
+      "id": "cond_pref_sms",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.contact_method}}",
+        "op": "==",
+        "right": "sms"
+      }
+    },
+    {
+      "id": "chat_question_sms",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Return strict JSON {body} with a short SMS answer (<120 chars) to {{payload.customer_name}} for question about order {{payload.order_id}}. Source: {{nodes.chat_intent.generated_response.summary}}"
+      }
+    },
+    {
+      "id": "sms_answer",
+      "type": "action.send_sms",
+      "config": {
+        "to": "{{payload.phone}}",
+        "content": "{{nodes.chat_question_sms.generated_response.body}}"
+      }
+    },
+    {
+      "id": "chat_question_email",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Return strict JSON {subject, body} with a courteous email answer to {{payload.customer_name}} for order {{payload.order_id}}. Base on: {{nodes.chat_intent.generated_response.summary}}"
+      }
+    },
+    {
+      "id": "email_answer",
+      "type": "action.send_email",
+      "config": {
+        "to": "{{payload.email}}",
+        "subject": "{{nodes.chat_question_email.generated_response.subject}}",
+        "content": "{{nodes.chat_question_email.generated_response.body}}"
+      }
+    },
+    {
+      "id": "chat_general",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "Return strict JSON {subject, body} with a polite reply for {{payload.customer_name}} about order {{payload.order_id}}. One line subject. Body < 120 chars. Use: {{nodes.chat_intent.generated_response.summary}}"
+      }
+    },
+    {
+      "id": "cond_pref_sms_2",
+      "type": "logic.condition",
+      "config": {
+        "left": "{{payload.contact_method}}",
+        "op": "==",
+        "right": "sms"
+      }
+    },
+    {
+      "id": "sms_general",
+      "type": "action.send_sms",
+      "config": {
+        "to": "{{payload.phone}}",
+        "content": "{{nodes.chat_general.generated_response.body}}"
+      }
+    },
+    {
+      "id": "email_general",
+      "type": "action.send_email",
+      "config": {
+        "to": "{{payload.email}}",
+        "subject": "{{nodes.chat_general.generated_response.subject}}",
+        "content": "{{nodes.chat_general.generated_response.body}}"
+      }
+    },
+    {
+      "id": "end_1",
+      "type": "logic.end",
+      "config": {}
+    }
+  ],
+  "edges": [
+    { "source": "trigger_1", "target": "chat_intent" },
+
+    { "source": "chat_intent", "source_port": "success", "target": "cond_is_complaint" },
+    { "source": "cond_is_complaint", "source_port": "true", "target": "chat_compose_complaint" },
+    { "source": "chat_compose_complaint", "source_port": "success", "target": "email_complaint" },
+    { "source": "email_complaint", "target": "end_1" },
+
+    { "source": "cond_is_complaint", "source_port": "false", "target": "cond_is_question" },
+
+    { "source": "cond_is_question", "source_port": "true", "target": "cond_pref_sms" },
+    { "source": "cond_pref_sms", "source_port": "true", "target": "chat_question_sms" },
+    { "source": "chat_question_sms", "source_port": "success", "target": "sms_answer" },
+    { "source": "sms_answer", "target": "end_1" },
+    { "source": "cond_pref_sms", "source_port": "false", "target": "chat_question_email" },
+    { "source": "chat_question_email", "source_port": "success", "target": "email_answer" },
+    { "source": "email_answer", "target": "end_1" },
+
+    { "source": "cond_is_question", "source_port": "false", "target": "chat_general" },
+    { "source": "chat_general", "source_port": "success", "target": "cond_pref_sms_2" },
+    { "source": "cond_pref_sms_2", "source_port": "true", "target": "sms_general" },
+    { "source": "cond_pref_sms_2", "source_port": "false", "target": "email_general" },
+    { "source": "sms_general", "target": "end_1" },
+    { "source": "email_general", "target": "end_1" }
+  ],
+  "entry": "trigger_1"
+}

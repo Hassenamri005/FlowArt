@@ -1,0 +1,113 @@
+nodes:
+  - type: trigger.webhook
+    label: Trigger - Webhook
+    category: trigger
+    icon_url: https://img.icons8.com/?size=100&id=32917&format=png&color=000000
+    description: Receives a webhook payload (POST) as the initial state. Optionally accept schedule time.
+    ports:
+      - default
+    config_schema:
+      schedule_at:
+        type: string
+        required: false
+        description: ISO8601 date-time to indicate scheduled execution time.
+    outputs:
+      payload: object
+      scheduled_at: string
+
+  - type: action.chat
+    label: Action - Chat (Azure OpenAI)
+    category: action
+    icon_url: https://img.icons8.com/color/48/azure-1.png
+    description: Sends a prompt to Azure OpenAI Chat and returns generated_response. If Azure env is not configured, returns a mock response.
+    ports:
+      - success
+    config_schema:
+      system_prompt:
+        type: string
+        required: false
+        default: You are a helpful assistant. Reply always in json object contains content without any other text.
+    outputs:
+      generated_response: (any) Generated response from Azure OpenAI Chat in JSON or String format.
+      generated_message: (string) content, message or text key value from generated_response if it is a JSON object.
+      raw_text: (string) raw text from generated_response if it is a String.
+
+  - type: action.send_sms
+    label: Action - Send SMS
+    category: action
+    icon_url: https://img.icons8.com/color/48/sms.png
+    description: Send an SMS (mock by default). Integrate Twilio by adding credentials and library.
+    ports:
+      - success
+    config_schema:
+      to:
+        type: string
+        required: true
+      content:
+        type: string
+        required: true
+        description: SMS content; supports {{...}} template placeholders.
+    outputs:
+      sent: boolean
+      to: string
+      content: string
+      sid: string
+
+  - type: action.send_email
+    label: Action - Send Email
+    category: action
+    icon_url: https://img.icons8.com/color/48/new-post.png
+    description: Send an email (mock by default). Integrate SMTP/provider in handler.
+    ports:
+      - success
+    config_schema:
+      to:
+        type: string
+        required: true
+      subject:
+        type: string
+        required: true
+        description: Email subject; supports {{...}} template placeholders.
+      content:
+        type: string
+        required: true
+        description: Email body; supports {{...}} template placeholders.
+    outputs:
+      sent: boolean
+      to: string
+      subject: string
+      content: string
+      message_id: string
+
+  - type: logic.condition
+    label: Logic - Condition
+    category: logic
+    icon_url: https://img.icons8.com/color/48/decision.png
+    description: Branch based on a condition. Supports ==, !=, >, >=, <, <=, contains, in, regex.
+    ports:
+      - true
+      - false
+    config_schema:
+      left:
+        type: any
+        required: true
+        description: Left operand; often a template like {{payload.message}} or {{nodes.chat_1.generated_response}}.
+      op:
+        type: string
+        required: true
+        enum: ["==", "eq", "!=", "neq", ">", ">=", "<", "<=", "contains", "in", "regex"]
+      right:
+        type: any
+        required: true
+        description: Right operand or regex pattern.
+    outputs:
+      result: boolean
+
+  - type: logic.end
+    label: Logic - End
+    category: logic
+    icon_url: https://img.icons8.com/fluency/48/stop.png
+    description: Terminates the workflow.
+    ports: []
+    config_schema: {}
+    outputs: {}

@@ -1,0 +1,49 @@
+{
+  "nodes": [
+    {
+      "id": "webhook_1",
+      "type": "trigger.webhook",
+      "config": {
+        "schedule_at": ""
+      }
+    },
+    {
+      "id": "chat_2",
+      "type": "action.chat",
+      "config": {
+        "system_prompt": "You are a helpful assistant. write a shrt welcoming sms to {{payload.customer_name}}. and return json object contains content, status and name."
+      }
+    },
+    {
+      "id": "send_sms_4",
+      "type": "action.send_sms",
+      "config": {
+        "to": "{{payload.email}}",
+        "content": "{{nodes.chat_2.generated_response.content}}"
+      }
+    },
+    {
+      "id": "end_5",
+      "type": "logic.end",
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "source": "webhook_1",
+      "target": "chat_2",
+      "source_port": "default"
+    },
+    {
+      "source": "chat_2",
+      "target": "send_sms_4",
+      "source_port": "success"
+    },
+    {
+      "source": "send_sms_4",
+      "target": "end_5",
+      "source_port": "success"
+    }
+  ],
+  "entry": "webhook_1"
+}
